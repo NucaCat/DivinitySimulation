@@ -90,9 +90,7 @@ namespace DivinitySimulation
                 }
             }
         }
-
-
-
+        
         public Form1()
         {
             InitializeComponent();
@@ -100,7 +98,15 @@ namespace DivinitySimulation
 
         private async void Form1_Load(object sender, EventArgs e)
         {
-            var responce = MessageBox.Show("Прочитать данные из файла?", "", MessageBoxButtons.YesNo);
+            DialogResult responce;
+            if (File.Exists(Environment.CurrentDirectory + "//SkillSets.txt") == false)
+            {
+                responce = DialogResult.No;
+            }
+            else
+            {
+                responce = MessageBox.Show("Прочитать данные из файла?", "", MessageBoxButtons.YesNo);
+            }
             _basicPoints = _level * 2 + 1 + (_handyMan ? 2 : 0);
             _basicSkillPoints = _level + 1 + (_resourcefulness ? 1 : 0);
 
