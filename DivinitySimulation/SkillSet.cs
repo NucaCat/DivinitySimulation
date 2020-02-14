@@ -10,15 +10,20 @@ namespace DivinitySimulation
     {
         public int Id { get; set; } = 0;
         public int Intelligence { get; private set; } = 0;
+        public static int AdditionalIntelligence { get; set; } = 0;
         public int Perception { get; private set; } = 0;
+        public static int AdditionalPerception { get; set; } = 0;
         public double IntelligenceDamageIncrease { get; private set; } = 0;
 
         public int Polymorph { get; private set; } = 0;
         public int KillingArt { get; private set; } = 0;
+        public static int AdditionalKillingArt { get; set; } = 0;
         public int TwoHands { get; private set; } = 0;
+        public static int AdditionalTwoHands { get; set; } = 0;
         public double TwoHandsDamageIncrease { get; private set; } = 0;
 
         public int CritChance { get; private set; } = 0;
+        public static int AdditionalCritChance { get; set; } = 0;
         public double CritMultiplier { get; private set; } = 1.60;
 
         public int BasicPoints { get; set; }
@@ -38,18 +43,47 @@ namespace DivinitySimulation
             BasicSkillPoints = basicSkillPoints;
         }
 
+        public void ApplyModifiers()
+        {
+            for (int i = 0; i < AdditionalKillingArt; i++)
+            {
+                AddKillingArt(true);
+            }
+            for (int i = 0; i < AdditionalTwoHands; i++)
+            {
+                AddTwoHands(true);
+            }
+            for (int i = 0; i < AdditionalIntelligence; i++)
+            {
+                AddIntelligence(true);
+            }
+            for (int i = 0; i < AdditionalPerception; i++)
+            {
+                AddPerception(true);
+            }
+
+            CritChance += AdditionalCritChance;
+        }
+
         public override string ToString()
         {
             return $"i{Intelligence}p{Perception}P{Polymorph}K{KillingArt}T{TwoHands}".ToString();
         }
 
-        public string GetInfo()
+        public string GetInfo(bool withAdditional = false)
         {
-            return $"Интеллект {Intelligence}\r\n" +
-                   $"Восприятие {Perception}\r\n" +
-                   $"Превращение {Polymorph}\r\n" +
-                   $"Искусство убийства {KillingArt}\r\n" +
-                   $"Два оружия {TwoHands}";
+            return  (withAdditional == false)? 
+                $"Интеллект {Intelligence}\r\n" +
+                $"Восприятие {Perception}\r\n" + 
+                $"Превращение {Polymorph}\r\n" +
+                $"Искусство убийства {KillingArt}\r\n" +
+                $"Два оружия {TwoHands}" :
+
+                $"Интеллект {Intelligence} ({SkillSet.AdditionalIntelligence})\r\n" +
+                $"Восприятие {Perception} ({SkillSet.AdditionalPerception})\r\n" +
+                $"Превращение {Polymorph} \r\n" +
+                $"Искусство убийства {KillingArt} ({SkillSet.AdditionalKillingArt})\r\n" +
+                $"Два оружия {TwoHands} ({SkillSet.AdditionalTwoHands})";
         }
 
         public bool Compare(SkillSet obj)
@@ -71,58 +105,70 @@ namespace DivinitySimulation
             return true;
         }
 
-        public bool AddKillingArt()
+        public bool AddKillingArt(bool isAdditional = false)
         {
-            if (BasicSkillPoints == 0 || KillingArt == 10)
+            if (isAdditional == false)
             {
-                return false;
-            }
-            BasicSkillPoints--;
+                if (BasicSkillPoints == 0 || KillingArt == 10)
+                {
+                    return false;
+                }
+                BasicSkillPoints--;
 
-            KillingArt++;
+                KillingArt++;
+            }
             CritMultiplier += 0.05;
 
             return true;
         }
 
-        public bool AddTwoHands()
+        public bool AddTwoHands(bool isAdditional = false)
         {
-            if (BasicSkillPoints == 0 || TwoHands == 10)
+            if (isAdditional == false)
             {
-                return false;
-            }
-            BasicSkillPoints--;
+                if (BasicSkillPoints == 0 || TwoHands == 10)
+                {
+                    return false;
+                }
+                BasicSkillPoints--;
 
-            TwoHands++;
+                TwoHands++;
+            }
             TwoHandsDamageIncrease += 0.05;
 
             return true;
         }
 
-        public bool AddIntelligence()
+        public bool AddIntelligence(bool isAdditional = false)
         {
-            if (BasicPoints == 0)
+            if (isAdditional == false)
             {
-                return false;
-            }
-            BasicPoints--;
+                if (BasicPoints == 0)
+                {
+                    return false;
+                }
+                BasicPoints--;
 
-            Intelligence++;
+                Intelligence++;
+            }
             IntelligenceDamageIncrease += 0.05;
 
             return true;
         }
 
-        public bool AddPerception()
+        public bool AddPerception(bool isAdditional = false)
         {
-            if (BasicPoints == 0)
+            if (isAdditional == false)
             {
-                return false;
+                if (BasicPoints == 0)
+                {
+                    return false;
+                }
+
+                BasicPoints--;
+
+                Perception++;
             }
-
-            BasicPoints--;
-
-            Perception++;
             CritChance += 1;
 
             return true;
@@ -131,7 +177,7 @@ namespace DivinitySimulation
 
         public int EnhanceDamage(int damage)
         {
-            return damage + (int)(damage * Intelligence * 0.05) + (int)(damage * TwoHands * 0.05);
+            return damage + (int)(damage * IntelligenceDamageIncrease) + (int)(damage * TwoHandsDamageIncrease);
         }
     }
 }

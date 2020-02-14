@@ -23,8 +23,17 @@ namespace DivinitySimulation
         private int _testNumber = 0;
         private int _maxTestCount = 5000;
         private int _maxIterationCount = 5000;
+
         private int _wand1Damage = 16;
         private int _wand2Damage = 8;
+
+        private int _additionalIntelligence = 0;
+        private int _additionalPerception = 0;
+
+        private int _additionalTwoHanded = 0;
+        private int _additionalKillingArt = 0;
+
+        private int _additionalCritChance;
 
         private int _numberOfCores = Environment.ProcessorCount;
         private int _basicPoints;
@@ -96,7 +105,7 @@ namespace DivinitySimulation
             InitializeComponent();
         }
 
-        private async void Form1_Load(object sender, EventArgs e)
+        private async Task Start()
         {
             DialogResult responce;
             if (File.Exists(Environment.CurrentDirectory + "//SkillSets.txt") == false)
@@ -125,6 +134,17 @@ namespace DivinitySimulation
                     }
                     progressBar1.Value = _testNumber;
                 }
+
+                SkillSet.AdditionalKillingArt = _additionalKillingArt;
+                SkillSet.AdditionalTwoHands = _additionalTwoHanded;
+                SkillSet.AdditionalIntelligence = _additionalIntelligence;
+                SkillSet.AdditionalPerception = _additionalPerception;
+                SkillSet.AdditionalCritChance = _additionalCritChance;
+
+                foreach (var skillSet in _skillSets)
+                {
+                    skillSet.ApplyModifiers();
+                }
             }
             else
             {
@@ -134,6 +154,45 @@ namespace DivinitySimulation
                     var x = sr.ReadLine();
                     if (x.IndexOf("int") - x.IndexOf("id") - "id".Length <= 0)
                     {
+                        //TODO read additional params
+                        var str = sr.ReadToEnd();
+                        Int32.TryParse(str.Substring(str.IndexOf("int") + "int".Length, 3).Trim(), out _additionalIntelligence);
+                        Int32.TryParse(str.Substring(str.IndexOf("perc") + "perc".Length, 3).Trim(), out _additionalPerception);
+                        Int32.TryParse(str.Substring(str.IndexOf("twoHanded") + "twoHanded".Length, 3).Trim(), out _additionalTwoHanded);
+                        Int32.TryParse(str.Substring(str.IndexOf("killing") + "killing".Length, 3).Trim(), out _additionalKillingArt);
+                        Int32.TryParse(str.Substring(str.IndexOf("wand1Damage") + "wand1Damage".Length, 3).Trim(), out _wand1Damage);
+                        Int32.TryParse(str.Substring(str.IndexOf("wand2Damage") + "wand2Damage".Length, 3).Trim(), out _wand2Damage);
+                        Int32.TryParse(str.Substring(str.IndexOf("critChance") + "critChance".Length, 3).Trim(), out _additionalCritChance);
+                        Int32.TryParse(str.Substring(str.IndexOf("handyman") + "handyman".Length, 3).Trim(), out var handyman);
+                        Int32.TryParse(str.Substring(str.IndexOf("resourcefullness") + "resourcefullness".Length, 3).Trim(), out var resourcefullness);
+                        /*MessageBox.Show($"{_additionalIntelligence}\r\n" +
+                                        $"{_additionalPerception}\r\n" +
+                                        $"{_additionalTwoHanded}\r\n" +
+                                        $"{_additionalKillingArt}\r\n" +
+                                        $"{_wand1Damage}\r\n" +
+                                        $"{_wand2Damage}");*/
+
+
+                        SkillSet.AdditionalKillingArt = _additionalKillingArt;
+                        SkillSet.AdditionalTwoHands = _additionalTwoHanded;
+                        SkillSet.AdditionalIntelligence = _additionalIntelligence;
+                        SkillSet.AdditionalPerception = _additionalPerception;
+                        SkillSet.AdditionalCritChance = _additionalCritChance;
+
+
+                        textBox1.Text = _wand1Damage.ToString();
+                        textBox2.Text = _wand2Damage.ToString();
+
+                        textBox3.Text = _additionalIntelligence.ToString();
+                        textBox4.Text = _additionalPerception.ToString();
+
+                        textBox5.Text = _additionalTwoHanded.ToString();
+                        textBox6.Text = _additionalKillingArt.ToString();
+
+                        textBox7.Text = _additionalCritChance.ToString();
+
+                        checkBox1.Checked = resourcefullness == 1;
+                        checkBox2.Checked = handyman == 1;
                         break;
                     }
                     int.TryParse(x.Substring(x.IndexOf("id") + "id".Length,
@@ -153,12 +212,6 @@ namespace DivinitySimulation
 
                     int.TryParse(x.Substring(x.IndexOf("killing") + "killing".Length,
                         x.Length - x.IndexOf("killing") - "killing".Length).Trim(), out var killing);
-
-                    /*MessageBox.Show($"{intelligence}\r\n" +
-                                    $"{perception}\r\n" +
-                                    $"{twoHanded}\r\n" +
-                                    $"{poly}\r\n" +
-                                    $"{killing}\r\n");*/
 
                     SkillSet skillSet = new SkillSet(id, _basicPoints, _basicSkillPoints);
 
@@ -184,6 +237,10 @@ namespace DivinitySimulation
                     }
                     //MessageBox.Show(skillSet.ToString());
                     _skillSets.Add(skillSet);
+                }
+                foreach (var skillSet in _skillSets)
+                {
+                    skillSet.ApplyModifiers();
                 }
             }
             var timeElapsed = (DateTime.Now - timeStamp).Seconds;
@@ -235,6 +292,8 @@ namespace DivinitySimulation
                 button.Enabled = true;
             }
 
+            button1.Enabled = false;
+
             if (responce == DialogResult.No)
             {
                 using StreamWriter sw = new StreamWriter(Environment.CurrentDirectory + "//SkillSets.txt");
@@ -248,7 +307,32 @@ namespace DivinitySimulation
                              $"killing {skillSet.KillingArt}\r\n");
                 }
                 sw.Write($"Количество сетов = {_skillSets.Count} \r\n" +
-                         $"Поиск сетов завершен за {timeElapsed} секунд");
+                         $"Поиск сетов завершен за {timeElapsed} секунд\r\n");
+                sw.Write($"Дополнительные параметры: \r\n" +
+                         $"int {SkillSet.AdditionalIntelligence} \r\n" +
+                         $"perc {SkillSet.AdditionalPerception} \r\n" +
+                         $"twoHanded {SkillSet.AdditionalTwoHands} \r\n" +
+                         $"killing {SkillSet.AdditionalKillingArt} \r\n" +
+                         $"critChance {SkillSet.AdditionalCritChance} \r\n" +
+                         $"wand1Damage {_wand1Damage} \r\n" +
+                         $"wand2Damage {_wand2Damage * 2} \r\n");
+                if (_handyMan == true)
+                {
+                    sw.Write($"handyMan 1 \r\n");
+                }
+                else
+                {
+                    sw.Write($"handyMan 0 \r\n");
+                }
+
+                if (_resourcefulness == true)
+                {
+                    sw.Write($"resourcefulness 1 \r\n");
+                }
+                else
+                {
+                    sw.Write($"resourcefulness 0 \r\n");
+                }
             }
         }
 
@@ -310,15 +394,15 @@ namespace DivinitySimulation
                     return;
                 }
                 int i = 0;
-                chart.Series.Add(x.GetInfo());
-                chart.Series[x.GetInfo()].ChartType = SeriesChartType.Line;
+                chart.Series.Add(x.GetInfo(true));
+                chart.Series[x.GetInfo(true)].ChartType = SeriesChartType.Line;
 
                 chart.ChartAreas[0].AxisX.Minimum = 0;
                 chart.ChartAreas[0].AxisX.Maximum = x.Damage.Count;
 
                 foreach (var damage in x.Damage)
                 {
-                    chart.Series[x.GetInfo()].Points.AddXY(i, damage);
+                    chart.Series[x.GetInfo(true)].Points.AddXY(i, damage);
                     i++;
                 }
 
@@ -342,15 +426,15 @@ namespace DivinitySimulation
                     return;
                 }
 
-                chart.Series.Add(x.GetInfo());
-                chart.Series[x.GetInfo()].ChartType = SeriesChartType.Line;
-                chart.Series[x.GetInfo()].BorderWidth = 5;
+                chart.Series.Add(x.GetInfo(true));
+                chart.Series[x.GetInfo(true)].ChartType = SeriesChartType.Line;
+                chart.Series[x.GetInfo(true)].BorderWidth = 5;
 
                 chart.ChartAreas[0].AxisX.Minimum = 0;
                 chart.ChartAreas[0].AxisX.Maximum = x.Damage.Count;
 
-                chart.Series[x.GetInfo()].Points.AddXY(0, x.AverageDamage);
-                chart.Series[x.GetInfo()].Points.AddXY(x.Damage.Count, x.AverageDamage);
+                chart.Series[x.GetInfo(true)].Points.AddXY(0, x.AverageDamage);
+                chart.Series[x.GetInfo(true)].Points.AddXY(x.Damage.Count, x.AverageDamage);
 
                 i++;
             }
@@ -366,6 +450,16 @@ namespace DivinitySimulation
             }
             using StreamWriter sw = new StreamWriter(Environment.CurrentDirectory + "//" + fileName);
             sw.Write(title + ":\r\n");
+            sw.Write($"Дополнительные параметры: \r\n" +
+                     $"Интеллект {SkillSet.AdditionalIntelligence} \r\n" +
+                     $"Восприятие {SkillSet.AdditionalPerception} \r\n" +
+                     $"Два оружия {SkillSet.AdditionalTwoHands} \r\n" +
+                     $"Искусство убийства {SkillSet.AdditionalKillingArt}\r\n" +
+                     $"Шанс крита {SkillSet.AdditionalCritChance}\r\n" +
+                     $"Урон первым жезлом {_wand1Damage} \r\n" +
+                     $"Урон вторым жезлом {_wand2Damage * 2} ({_wand2Damage}) \r\n" +
+                     $"Бережливость {_resourcefulness} \r\n" +
+                     $"Мастер на все руки {_handyMan} \r\n");
             int i = 1;
             foreach (var skillSet in sorted)
             {
@@ -373,14 +467,14 @@ namespace DivinitySimulation
                 {
                     return;
                 }
-                sw.Write("Статы: \r\n" + skillSet.GetInfo() + "\r\n");
+                sw.Write("Статы: \r\n" + skillSet.GetInfo(true) + "\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("Средний урон: " + skillSet.AverageDamage + "\r\n");
                 sw.Write("Минимальный урон: " + skillSet.MinDamage + "\r\n");
                 sw.Write("Максимальный урон: " + skillSet.MaxDamage + "\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("Количество критов: " + skillSet.CritCount + "\r\n");
-                sw.Write("Шанс крита: " + skillSet.CritChance + "\r\n");
+                sw.Write("Шанс крита: " + skillSet.CritChance + " (" + SkillSet.AdditionalCritChance + ")\r\n");
                 sw.Write("Множитель критов: " + skillSet.CritMultiplier + "\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("---------------------------------------------\r\n");
@@ -455,70 +549,78 @@ namespace DivinitySimulation
 
 
             int i = 0;
-            chart1.Series.Add(sorted[0].GetInfo());
-            chart1.Series[sorted[0].GetInfo()].ChartType = SeriesChartType.Line;
+            chart1.Series.Add(sorted[0].GetInfo(true));
+            chart1.Series[sorted[0].GetInfo(true)].ChartType = SeriesChartType.Line;
 
             chart1.ChartAreas[0].AxisX.Minimum = 0;
             chart1.ChartAreas[0].AxisX.Maximum = sorted[0].Damage.Count;
 
-            chart2.Series.Add(sorted[0].GetInfo());
-            chart2.Series[sorted[0].GetInfo()].ChartType = SeriesChartType.Line;
-            chart2.Series[sorted[0].GetInfo()].BorderWidth = 5;
+            chart2.Series.Add(sorted[0].GetInfo(true));
+            chart2.Series[sorted[0].GetInfo(true)].ChartType = SeriesChartType.Line;
+            chart2.Series[sorted[0].GetInfo(true)].BorderWidth = 5;
 
             chart2.ChartAreas[0].AxisX.Minimum = 0;
             chart2.ChartAreas[0].AxisX.Maximum = sorted[0].Damage.Count;
 
             foreach (var damage in sorted[0].Damage)
             {
-                chart1.Series[sorted[0].GetInfo()].Points.AddXY(i, damage);
+                chart1.Series[sorted[0].GetInfo(true)].Points.AddXY(i, damage);
                 i++;
             }
-            chart2.Series[sorted[0].GetInfo()].Points.AddXY(0, sorted[0].AverageDamage);
-            chart2.Series[sorted[0].GetInfo()].Points.AddXY(sorted.Length, sorted[0].AverageDamage);
+            chart2.Series[sorted[0].GetInfo(true)].Points.AddXY(0, sorted[0].AverageDamage);
+            chart2.Series[sorted[0].GetInfo(true)].Points.AddXY(sorted.Length, sorted[0].AverageDamage);
 
             i = 0;
-            chart1.Series.Add(sorted[sorted.Length - 1].GetInfo());
-            chart1.Series[sorted[sorted.Length - 1].GetInfo()].ChartType = SeriesChartType.Line;
+            chart1.Series.Add(sorted[sorted.Length - 1].GetInfo(true));
+            chart1.Series[sorted[sorted.Length - 1].GetInfo(true)].ChartType = SeriesChartType.Line;
 
-            chart2.Series.Add(sorted[sorted.Length - 1].GetInfo());
-            chart2.Series[sorted[sorted.Length - 1].GetInfo()].ChartType = SeriesChartType.Line;
-            chart2.Series[sorted[sorted.Length - 1].GetInfo()].BorderWidth = 5;
+            chart2.Series.Add(sorted[sorted.Length - 1].GetInfo(true));
+            chart2.Series[sorted[sorted.Length - 1].GetInfo(true)].ChartType = SeriesChartType.Line;
+            chart2.Series[sorted[sorted.Length - 1].GetInfo(true)].BorderWidth = 5;
 
             foreach (var damage in sorted[sorted.Length - 1].Damage)
             {
-                chart1.Series[sorted[sorted.Length - 1].GetInfo()].Points.AddXY(i, damage);
+                chart1.Series[sorted[sorted.Length - 1].GetInfo(true)].Points.AddXY(i, damage);
                 i++;
             }
-            chart2.Series[sorted[sorted.Length - 1].GetInfo()].Points
+            chart2.Series[sorted[sorted.Length - 1].GetInfo(true)].Points
                 .AddXY(0, sorted[sorted.Length - 1].AverageDamage);
 
-            chart2.Series[sorted[sorted.Length - 1].GetInfo()].Points
+            chart2.Series[sorted[sorted.Length - 1].GetInfo(true)].Points
                 .AddXY(sorted.Length, sorted[sorted.Length - 1].AverageDamage);
 
             using StreamWriter sw = new StreamWriter(Environment.CurrentDirectory + "//TopAndLeastDamage.txt");
             sw.Write("Наибольший урон и наименьший урон:\r\n");
+            sw.Write($"Дополнительные параметры: \r\n" +
+                     $"Интеллект {SkillSet.AdditionalIntelligence} \r\n" +
+                     $"Восприятие {SkillSet.AdditionalPerception} \r\n" +
+                     $"Два оружия {SkillSet.AdditionalTwoHands} \r\n" +
+                     $"Искусство убийства {SkillSet.AdditionalKillingArt}\r\n" +
+                     $"Шанс крита {SkillSet.AdditionalCritChance}\r\n" +
+                     $"Урон первым жезлом {_wand1Damage} \r\n" +
+                     $"Урон вторым жезлом {_wand2Damage * 2} ({_wand2Damage}) \r\n");
 
-            sw.Write("Статы: " + sorted[0].GetInfo() + "\r\n");
+            sw.Write("Статы: \r\n" + sorted[0].GetInfo(true) + "\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("Средний урон: " + sorted[0].AverageDamage + "\r\n");
             sw.Write("Минимальный урон: " + sorted[0].MinDamage + "\r\n");
             sw.Write("Максимальный урон: " + sorted[0].MaxDamage + "\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("Количество критов: " + sorted[0].CritCount + "\r\n");
-            sw.Write("Шанс крита: " + sorted[0].CritChance + "\r\n");
+            sw.Write("Шанс крита: " + sorted[0].CritChance + " (" + SkillSet.AdditionalCritChance + ")\r\n");
             sw.Write("Множитель критов: " + sorted[0].CritMultiplier + "\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("---------------------------------------------\r\n");
 
-            sw.Write("Статы: " + sorted[sorted.Length - 1].GetInfo() + "\r\n");
+            sw.Write("Статы: " + sorted[sorted.Length - 1].GetInfo(true) + "\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("Средний урон: " + sorted[sorted.Length - 1].AverageDamage + "\r\n");
             sw.Write("Минимальный урон: " + sorted[sorted.Length - 1].MinDamage + "\r\n");
             sw.Write("Максимальный урон: " + sorted[sorted.Length - 1].MaxDamage + "\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("Количество критов: " + sorted[sorted.Length - 1].CritCount + "\r\n");
-            sw.Write("Шанс крита: " + sorted[sorted.Length - 1].CritChance + "\r\n");
+            sw.Write("Шанс крита: " + sorted[sorted.Length - 1].CritChance + " (" + SkillSet.AdditionalCritChance + ")\r\n");
             sw.Write("Множитель критов: " + sorted[sorted.Length - 1].CritMultiplier + "\r\n");
             sw.Write("---------------------------------------------\r\n");
             sw.Write("---------------------------------------------\r\n");
@@ -526,25 +628,99 @@ namespace DivinitySimulation
         }
 
         private bool isWritedSorted = false;
+
         private void WriteSorted(IOrderedEnumerable<SkillSet> sorted)
         {
             using StreamWriter sw = new StreamWriter(Environment.CurrentDirectory + "//SortedSkillSets.txt");
-
+            sw.Write($"Дополнительные параметры: \r\n" +
+                     $"Интеллект {SkillSet.AdditionalIntelligence} \r\n" +
+                     $"Восприятие {SkillSet.AdditionalPerception} \r\n" +
+                     $"Два оружия {SkillSet.AdditionalTwoHands} \r\n" +
+                     $"Искусство убийства {SkillSet.AdditionalKillingArt}\r\n" +
+                     $"Шанс крита {SkillSet.AdditionalCritChance}\r\n" +
+                     $"Урон первым жезлом {_wand1Damage} \r\n" +
+                     $"Урон вторым жезлом {_wand2Damage * 2} ({_wand2Damage}) \r\n" +
+                     $"Бережливость {_resourcefulness} \r\n" +
+                     $"Мастер на все руки {_handyMan} \r\n");
             foreach (var skillSet in sorted)
             {
-                sw.Write("Статы: \r\n" + skillSet.GetInfo() + "\r\n");
+                sw.Write("Статы: \r\n" + skillSet.GetInfo(true) + "\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("Средний урон: " + skillSet.AverageDamage + "\r\n");
                 sw.Write("Минимальный урон: " + skillSet.MinDamage + "\r\n");
                 sw.Write("Максимальный урон: " + skillSet.MaxDamage + "\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("Количество критов: " + skillSet.CritCount + "\r\n");
-                sw.Write("Шанс крита: " + skillSet.CritChance + "\r\n");
+                sw.Write("Шанс крита: " + skillSet.CritChance + " (" + SkillSet.AdditionalCritChance + ")\r\n");
                 sw.Write("Множитель критов: " + skillSet.CritMultiplier + "\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("---------------------------------------------\r\n");
                 sw.Write("---------------------------------------------\r\n");
             }
+        }
+
+        private async void button1_Click(object sender, EventArgs e)
+        {
+            button1.Enabled = false;
+            foreach (var textBox in Controls.OfType<TextBox>())
+            {
+                textBox.Enabled = false;
+            }
+
+            checkBox1.Enabled = false;
+            checkBox2.Enabled = false;
+
+            string errorMessage = "";
+            if (Int32.TryParse(textBox1.Text, out var wand1Damage) == false)
+            {
+                errorMessage += "Не введено значение урона жезла 1\r\n";
+            }
+            if (Int32.TryParse(textBox2.Text, out var wand2Damage) == false)
+            {
+                errorMessage += "Не введено значение урона жезла 2\r\n";
+            }
+            if (Int32.TryParse(textBox3.Text, out var intModifier) == false)
+            {
+                errorMessage += "Не введено значение дополнительного интеллекта\r\n";
+            }
+            if (Int32.TryParse(textBox4.Text, out var percModifier) == false)
+            {
+                errorMessage += "Не введено значение дополнительного восприятия\r\n";
+            }
+            if (Int32.TryParse(textBox5.Text, out var twoHandsModifier) == false)
+            {
+                errorMessage += "Не введено значение двух оружий\r\n";
+            }
+            if (Int32.TryParse(textBox6.Text, out var killingModifier) == false)
+            {
+                errorMessage += "Не введено значение дополнительного искусства убийства\r\n";
+            }
+            if (Int32.TryParse(textBox7.Text, out var CritChanceModifier) == false)
+            {
+                errorMessage += "Не введено значение шанса крита\r\n";
+            }
+
+            if (errorMessage.Length > 0)
+            {
+                MessageBox.Show(errorMessage);
+                return;
+            }
+
+            _wand1Damage = wand1Damage;
+            _wand2Damage = wand2Damage / 2;
+
+            _additionalIntelligence = intModifier;
+            _additionalPerception = percModifier;
+
+            _additionalTwoHanded = twoHandsModifier;
+            _additionalKillingArt = killingModifier;
+
+            _resourcefulness = checkBox1.Checked;
+            _handyMan = checkBox2.Checked;
+
+            _additionalCritChance = CritChanceModifier;
+
+            await Start();
         }
     }
 }
